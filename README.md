@@ -1,5 +1,7 @@
 # Analiza wskaźnika samobójstw (2000–2020/2021)
 
+[Otwórz stronę z analizą](https://ssowula.github.io/Analiza-wskaznika-samobojstw/)
+
 Projekt przedstawia analizę wskaźnika samobójstw w latach 2000–2020/2021 z podziałem na kontynenty, kraje oraz płeć. Analiza została wykonana w języku R (R Markdown) i opublikowana jako strona HTML.
 
 ## Zakres analizy
