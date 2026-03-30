@@ -78,12 +78,12 @@ library(knitr)
 library(scales)
 
 # WCZYTYWANIE DANYCH
-df_suicide <- read.csv('dane_samobojstwa.csv')
-df_country_by_continent <- read.csv('Countries by continents.csv')
-df_alcohol <- read.csv('dane_alkohol.csv')
-df_oop<-read.csv('dane_oop.csv')
-df_dghe <- read.csv('dane_dghe.csv')
-df_pkb <- read.csv('dane_pkb.csv')
+df_suicide <- read.csv('dane/dane_samobojstwa.csv')
+df_country_by_continent <- read.csv('dane/Countries by continents.csv')
+df_alcohol <- read.csv('dane/dane_alkohol.csv')
+df_oop<-read.csv('dane/dane_oop.csv')
+df_dghe <- read.csv('dane/dane_dghe.csv')
+df_pkb <- read.csv('dane/dane_pkb.csv')
 
 # WYBÓR POTRZEBNYCH DO ANALIZY KOLUMN
 
@@ -299,12 +299,20 @@ male_poland <- poland%>%
 
 female_poland <- poland%>%
   filter(sex=="Female")
+```
 
+### Test dla mężczyzn
+
+```{r echo=FALSE}
 male_poland %>%
   select(suicide)%>%
   pull()%>%
   shapiro.test()
+```
 
+### Test dla kobiet
+
+```{r echo=FALSE}
 female_poland%>%
   select(suicide)%>%
   pull()%>%
@@ -363,18 +371,20 @@ Najbardziej zmienna zdaje się być Ameryka Południowa, gdzie wskaźnik rósł 
 ## 3a) Czy istnieje zależność między średnim spożyciem alkoholu (wśród osób pijących) w kraju a samobójstwami?
 
 ### Ogólnie
-```{r echo=FALSE}
+
+```{r echo=TRUE}
 x<-suicide_alcohol%>%
   filter(sex=="Both sexes")%>%
   group_by(continent,sex)
 
 cor(x$suicide,x$alcohol,method = "spearman")
 ```
+
 Korelacja wynosi 0.48, co sugeruje umiarkowaną zależność pomiędzy alkoholem a samobójstwami. Sprawdźmy jeszcze jak to wygląda jeśli chodzi o mężczyzn i kobiety osobno.
 
 ### Mężczyźni
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 x<-suicide_alcohol%>%
   filter(sex=="Male")%>%
   group_by(continent,sex)
@@ -401,7 +411,7 @@ x%>%
 W Afryce możemy zauważyć, że rosnące spożycie alkoholu nie ma wpływu na współczynnik samobójstw. 
 Największą zależność widzimy dla Europy oraz Azji, gdzie dla Europy zdaje się być silniejsza dlatego w dalszej części badania skupię się właśnie na niej. 
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 x<-suicide_alcohol%>%
   filter(sex=="Male",continent=="Europe")%>%
   group_by(continent,sex)
@@ -427,7 +437,7 @@ x%>%
 
 ### Kobiety
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 x<-suicide_alcohol%>%
   filter(sex=="Female")%>%
   group_by(continent,sex)
@@ -453,7 +463,7 @@ Alkohol w pewnym stopniu przyczynia się do popełnianych samobójstw, w szczeg�
 
 ## 3b) Czy w krajach, gdzie obywatele płacą za leczenie z własnej kieszeni, wskaźnik samobójstw jest wyższy?<br>
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 cor(suicide_oop$suicide,suicide_oop$oop,method = 'spearman')
 ```
 
@@ -479,7 +489,7 @@ x%>%
 
 ## 3c) Czy w krajach z wyższymi wydatkami rządowymi na opiekę zdrowotną wskaźnik samobójstw jest niższy?<br>
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 cor(suicide_dghe$suicide,suicide_dghe$dghe,method='spearman')
 ```
 
@@ -503,7 +513,7 @@ Widzimy, że na przestrzeni lat wydatki rządowe wzrosły, co jednak nie miało 
 
 ## 3d) Czy istnieje zależność między PKB per capita a samobójstwami?<br>
 
-```{r echo=FALSE}
+```{r echo=TRUE}
 cor(suicide_pkb$pkb,suicide_pkb$suicide,method='spearman')
 ```
 Korelacja na poziomie 0.24 wskazuje na słabą zależność pomiędzy PKB per capita a wskaźnikiem samobójstw. Oznacza to, że w niektórych krajach wzrostowi PKB per capita mógł towarzyszyć wzrost wskaźnika samobójstw.

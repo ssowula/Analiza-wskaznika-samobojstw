@@ -1152,11 +1152,16 @@ przeprowadzę test dla dwóch średnich.</p>
 <p>Czyli sprawdzimy czy średnia wartość wskaźnika samobójstw jest
 statystycznie większa dla mężczyzn, ale najpierw trzeba sprawdzić,
 którego testu możemy użyć, a którego nie.</p>
+<div id="test-dla-mężczyzn" class="section level3">
+<h3>Test dla mężczyzn</h3>
 <pre><code>## 
 ##  Shapiro-Wilk normality test
 ## 
 ## data:  .
 ## W = 0.90213, p-value = 0.0328</code></pre>
+</div>
+<div id="test-dla-kobiet" class="section level3">
+<h3>Test dla kobiet</h3>
 <pre><code>## 
 ##  Shapiro-Wilk normality test
 ## 
@@ -1185,6 +1190,7 @@ popełnia samobójstwo co roku. Patrząc na te dane od razu rzuca się w
 oczy dysproporcja między wskaźnikiem dla mężczyzn i dla kobiet, albowiem
 dla mężczyzn jest on ponad 7 razy większy, co oznacza, że w Polsce
 mężczyźni popełniają samobójstwo 7 razy częściej niż kobiety.</p>
+</div>
 </div>
 </div>
 <div id="ii.-interpretacja-danych-historycznych-1" class="section level1">
@@ -1218,6 +1224,11 @@ rósł i malał na zmianę.</p>
 osób pijących) w kraju a samobójstwami?</h2>
 <div id="ogólnie-2" class="section level3">
 <h3>Ogólnie</h3>
+<pre class="r"><code>x&lt;-suicide_alcohol%&gt;%
+  filter(sex==&quot;Both sexes&quot;)%&gt;%
+  group_by(continent,sex)
+
+cor(x$suicide,x$alcohol,method = &quot;spearman&quot;)</code></pre>
 <pre><code>## [1] 0.4762647</code></pre>
 <p>Korelacja wynosi 0.48, co sugeruje umiarkowaną zależność pomiędzy
 alkoholem a samobójstwami. Sprawdźmy jeszcze jak to wygląda jeśli chodzi
@@ -1225,6 +1236,11 @@ o mężczyzn i kobiety osobno.</p>
 </div>
 <div id="mężczyźni-2" class="section level3">
 <h3>Mężczyźni</h3>
+<pre class="r"><code>x&lt;-suicide_alcohol%&gt;%
+  filter(sex==&quot;Male&quot;)%&gt;%
+  group_by(continent,sex)
+
+cor(x$suicide,x$alcohol,method=&quot;spearman&quot;)</code></pre>
 <pre><code>## [1] 0.5365437</code></pre>
 <p>Widzimy, że korelacja dla mężczyzn wzrosła do 0.54. Co prawda
 interpretacja pozostaje bez zmian, ale wyższa korelacja może wskazywać
@@ -1236,6 +1252,11 @@ jeszcze jak to wygląda na wykresie.</p>
 wpływu na współczynnik samobójstw. Największą zależność widzimy dla
 Europy oraz Azji, gdzie dla Europy zdaje się być silniejsza dlatego w
 dalszej części badania skupię się właśnie na niej.</p>
+<pre class="r"><code>x&lt;-suicide_alcohol%&gt;%
+  filter(sex==&quot;Male&quot;,continent==&quot;Europe&quot;)%&gt;%
+  group_by(continent,sex)
+
+cor(x$suicide,x$alcohol,method=&quot;spearman&quot;)</code></pre>
 <pre><code>## [1] 0.5424906</code></pre>
 <p>Korelacja dla mężczyzn w Europie jest niemalże identyczna jak w
 przypadku korelacji globalnej.</p>
@@ -1251,6 +1272,11 @@ popełniane samobójstwa, jednakże nie jest on głównym czynnikiem.</p>
 </div>
 <div id="kobiety-2" class="section level3">
 <h3>Kobiety</h3>
+<pre class="r"><code>x&lt;-suicide_alcohol%&gt;%
+  filter(sex==&quot;Female&quot;)%&gt;%
+  group_by(continent,sex)
+
+cor(x$suicide,x$alcohol,method = &#39;spearman&#39;)</code></pre>
 <pre><code>## [1] 0.3125813</code></pre>
 <p>Dla kobiet sytuacja wygląda już nieco inaczej - mianowicie korelacja
 wyniosła 0.31, przez co nie możemy już mówić o umiarkowanej zależności,
@@ -1299,6 +1325,7 @@ zjawiska.</p>
 <div id="b-czy-w-krajach-gdzie-obywatele-płacą-za-leczenie-z-własnej-kieszeni-wskaźnik-samobójstw-jest-wyższy" class="section level2">
 <h2>3b) Czy w krajach, gdzie obywatele płacą za leczenie z własnej
 kieszeni, wskaźnik samobójstw jest wyższy?<br></h2>
+<pre class="r"><code>cor(suicide_oop$suicide,suicide_oop$oop,method = &#39;spearman&#39;)</code></pre>
 <pre><code>## [1] 0.1565698</code></pre>
 <p>Korelacja między własnymi wydatkami na opiekę zdrowotną a wskaźnikiem
 samobójstw jest słaba (0.16). Oznacza to, że wysokie wydatki mogą mieć w
@@ -1318,6 +1345,7 @@ oddziałują na badany wskaźnik.</p>
 <div id="c-czy-w-krajach-z-wyższymi-wydatkami-rządowymi-na-opiekę-zdrowotną-wskaźnik-samobójstw-jest-niższy" class="section level2">
 <h2>3c) Czy w krajach z wyższymi wydatkami rządowymi na opiekę zdrowotną
 wskaźnik samobójstw jest niższy?<br></h2>
+<pre class="r"><code>cor(suicide_dghe$suicide,suicide_dghe$dghe,method=&#39;spearman&#39;)</code></pre>
 <pre><code>## [1] 0.2975694</code></pre>
 <p>Korelacja w tym przypadku jest już nieco wyższa, (0.3) ale dalej
 kwalifikuje się jako słaba. Jest ona jednak wyższa niż w przypadku
@@ -1336,6 +1364,7 @@ wskaźnikiem samobójstw jak i najniższym.</p>
 <div id="d-czy-istnieje-zależność-między-pkb-per-capita-a-samobójstwami" class="section level2">
 <h2>3d) Czy istnieje zależność między PKB per capita a
 samobójstwami?<br></h2>
+<pre class="r"><code>cor(suicide_pkb$pkb,suicide_pkb$suicide,method=&#39;spearman&#39;)</code></pre>
 <pre><code>## [1] 0.243138</code></pre>
 <p>Korelacja na poziomie 0.24 wskazuje na słabą zależność pomiędzy PKB
 per capita a wskaźnikiem samobójstw. Oznacza to, że w niektórych krajach
