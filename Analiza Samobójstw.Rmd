@@ -1,0 +1,529 @@
+---
+title: "Analiza współczynnika samobójstw w ujęciu globalnym w latach 2000-2020/2021"
+author: "Sylwester Sowula"
+date: "`r Sys.Date()`" 
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, error = FALSE, message = FALSE, warning = FALSE)
+```
+# WSTĘP
+Badanie ma na celu analizę wskaźnika samobójstw w ujęciu zarówno kontynentalnym jak i krajowym, uwzględniając podział na mężczyzn i kobiety. Sprawdzona zostanie zależność między badanym wskaźnikiem a spożyciem alkoholu, wydatkami na opiekę zdrowotną z własnej kieszeni, rządowymi wydatkami na opiekę zdrowotną oraz PKB per capita. Wnioski wysnuwane są na podstawie przefiltrowanych i zgrupowanych danych oraz korelacji spearmana, na którą zdecydowałem się ze względu na liczne wartości odstające w badanym zestawie danych. Analiza w głównej mierze sprawdza wpływ czynników finansowych na wskaźnik samobójstw, nie uwzględniając tym samym czynników społecznych.
+
+# DANE
+
+## SUICIDE:
+country - kraje<br>
+year - rok<br>
+sex - płeć, podział na mężczyzn, kobiety oraz ujęcie ogólne<br>
+suicide - wskaźnik (Współczynnik śmiertelności z powodu samobójstw) liczony w następujący sposób: 
+(liczba samobójstw w ciągu roku / liczba ludności) * 100 000 mówi więc on nam ile samobójstw w ciągu roku przypada na 100 000 mieszkańców 
+
+źródło: https://www.who.int/data/gho/data/indicators/indicator-details/GHO/crude-suicide-rates-(per-100-000-population)
+
+## ALCOHOL
+country - kraje<br>
+year - rok<br>
+sex - płeć, podział na mężczyzn, kobiety oraz ujęcie ogólne<br>
+alcohol - wskaźnik (średnie dzienne spożycie na osobę w gramach wśród osób pijących) liczony w następujący sposób:
+APC x 1000 x 0,793/365 , gdzie APC to Alcohol Per Capita, pomnożone razy 1000 bo zmieniamy z litrów na mililitry a następnie mnożymy razy 0,793 czyli wagę alkoholu oraz dzielimy na 365 aby uzyskać dzienne spożycie.
+
+źródło: https://www.who.int/data/gho/data/indicators/indicator-details/GHO/average-daily-intake-in-grams-of-alcohol--population-15
+
+## OOP
+country - kraje<br>
+year - rok<br>
+oop (out of pocket) - wydatki na opiekę zdrowotną przypadające na jedną osobę w gospodarstwie domowym wyrażone w USD.
+
+źródło: https://www.who.int/data/gho/data/indicators/indicator-details/GHO/out-of-pocket-expenditure-(oop)-per-capita-in-us
+
+## DGHE
+country - kraje<br>
+year - rok<br>
+dghe- wydatki rządowe na opiekę zdrowotną w przeliczeniu na osobę wyrażone w USD<br>
+
+źródło - https://www.who.int/data/gho/data/indicators/indicator-details/GHO/domestic-general-government-health-expenditure-(gghe-d)-per-capita-in-us
+
+## PKB 
+country - kraje<br>
+year - rok<br>
+pkb - średnia roczna produkcja gospodarcza na osobę w danym kraju lub regionie, skorygowana o inflację i różnice w kosztach utrzymania między krajami.
+
+źródło: https://ourworldindata.org/grapher/gdp-per-capita-worldbank?tab=table
+
+# PYTANIA BADAWCZE
+
+## I. Zapoznanie się z danymi, interpretacja statystyk opisowych, filtrowanie i grupowanie danych
+
+1a) Na którym kontynencie i w jakim kraju wskaźnik osiąga wartość najwyższą, a w którym najniższą? <br>
+1b) Czy płeć ma znaczenie?<br>
+1c) Jak to wygląda jeśli chodzi o Polskę? <br>
+
+## II. Interpretacja danych historycznych
+
+2a) Jak zmieniał się wskaźnik samobójstw na przestrzeni lat w ujęciu kontynentalnym?<br>
+
+## III. Badanie zależności + wykresy
+
+3a) Czy istnieje zależność między średnim spożyciem alkoholu w kraju (wśród osób pijących) a samobójstwami?<br>
+3b) Czy w krajach, gdzie obywatele płacą za leczenie z własnej kieszeni, wskaźnik samobójstw jest wyższy?<br>
+3c) Czy w krajach z wyższymi wydatkami rządowymi na opiekę zdrowotną wskaźnik samobójstw jest niższy?<br>
+3d) Czy istnieje zależność między pkb per capita a samobójstwami?<br>
+
+```{r include=FALSE}
+library(dplyr)
+library(ggplot2)
+library(nortest)
+library(knitr)
+library(scales)
+
+# WCZYTYWANIE DANYCH
+df_suicide <- read.csv('dane_samobojstwa.csv')
+df_country_by_continent <- read.csv('Countries by continents.csv')
+df_alcohol <- read.csv('dane_alkohol.csv')
+df_oop<-read.csv('dane_oop.csv')
+df_dghe <- read.csv('dane_dghe.csv')
+df_pkb <- read.csv('dane_pkb.csv')
+
+# WYBÓR POTRZEBNYCH DO ANALIZY KOLUMN
+
+kraje_i_kontynenty <- na.omit(df_country_by_continent)
+names(kraje_i_kontynenty)[1] = "continent"
+names(kraje_i_kontynenty)[2] = "country"
+
+suicide <- data.frame("country" = df_suicide$Location, "year" = df_suicide$Period, "sex" = df_suicide$Dim1, "suicide" = df_suicide$FactValueNumeric)
+
+alcohol <- data.frame("country" = df_alcohol$Location, "year" = df_alcohol$Period, "sex" = df_alcohol$Dim1, "alcohol" = df_alcohol$FactValueNumeric)
+
+oop<- data.frame("country" = df_oop$Location, "year" = df_oop$Period, "oop" = df_oop$FactValueNumeric)
+
+dghe <- data.frame("country" = df_dghe$Location, "year" = df_dghe$Period, "dghe" = df_dghe$FactValueNumeric)
+
+pkb <- data.frame("country" = df_pkb$Entity, "year" = df_pkb$Year, "pkb" = df_pkb$GDP.per.capita..PPP..constant.2021.international...)
+
+# WSTĘPNE CZYSZCZENIE DANYCH
+
+suicide <- na.omit(suicide)
+alcohol <- na.omit(alcohol)
+oop<-na.omit(oop)
+dghe <- na.omit(dghe)
+pkb<-na.omit(pkb)
+
+# ŁĄCZENIE I DOPASOWYWANIE TABEL 
+
+help_suicide <- kraje_i_kontynenty
+help_suicide <- left_join(kraje_i_kontynenty, suicide ,by=c('country'))
+
+suicide_only <- na.omit(help_suicide)
+
+help_alcohol <- left_join(help_suicide,alcohol,by=c('country','sex','year'))
+suicide_alcohol <- na.omit(help_alcohol)
+
+suicide_oop <- left_join(help_suicide,oop,by=c("country", "year"))
+suicide_oop <- na.omit(suicide_oop)
+suicide_oop <- suicide_oop %>%
+  filter(sex=="Both sexes")
+
+suicide_dghe <- left_join(help_suicide,dghe,by=c("country","year"))
+suicide_dghe <- na.omit(suicide_dghe)
+suicide_dghe <- suicide_dghe %>%
+  filter(sex=="Both sexes")
+
+suicide_pkb <- left_join(help_suicide,pkb,by=c("country","year"))
+suicide_pkb<-na.omit(suicide_pkb)
+suicide_pkb <- suicide_pkb%>%
+  filter(sex=="Both sexes")
+
+# ZDEFINIOWANIE PALETY KOLORÓW
+
+continent_colors <- c(
+  "Europe" = "#0085C7",
+  "Asia" = "#F4C300",
+  "Africa" = "#000000",
+  "Oceania" = "#009F3D",
+  "North America" = "#DF0024",
+  "South America" = "#FF7F00"
+)
+```
+
+
+# I. Zapoznanie się z danymi, interpretacja statystyk opisowych, filtrowanie i grupowanie danych
+
+```{r echo=FALSE}
+str(suicide)
+kable(summary(suicide))
+sd(suicide$suicide)
+```
+Średnia wartość dla badanego wskaźnika wynosi 9,5. Oznacza to, że średnio na świecie samobójstwo co roku (w badanym okresie) popełnia około 9 osób na 100 000 populacji, natomiast mediana wynosi 6,7 co może wskazywać na pewną asymetrię rozkładu naszych danych i outliery. Odchylenie standardowe jest niemalże równe średniej, co wskazuje na duże zróżnicowanie danych. Aby to lepiej zobrazować zobaczmy jak to wygląda na boxplocie.
+
+```{r echo=FALSE, fig.width=10}
+ggplot(suicide,aes(x=suicide))+
+  geom_boxplot()+
+  labs(title="Wykres pudełkowy dla wskaźnika samobójstw",
+       x="Wartość wskaźnika")+
+  theme_light(base_size = 15)
+```
+<br>Łatwo zauważyć, że jest wiele krajów, dla których wskaźnik jest o wiele większy od mediany. Może to wynikać w szczególności z różnic kulturowych, religijnych oraz różnic w populacji. Niektóre kraje mogą również zaniżać liczbę samobójstw chociażby poprzez złą jakość raportowania (w szczególności w mniej zamożnych państwach), a jeszcze inne nie są uwzględnione w analizie ze względu na brak danych np. Korea Północna i Południowa oraz Rosja.
+
+## 1a) Na którym kontynencie i w jakim kraju wskaźnik osiąga wartość najwyższą, a w którym najniższą?
+## 1b) Czy płeć ma znaczenie?
+### UJĘCIE KONTYNENTALNE
+```{r echo=FALSE}
+kable(suicide_only %>% 
+  group_by(continent,sex)%>%
+  summarise(mean_continent_suicide = round(mean(suicide),2)))
+```
+
+Najwyższy współczynnik dla obu płci osiągnęła Europa i wynosi on 14,46. Oznacza to, że na 100 000 osób, samobójstwo popełnia 14.
+Jeśli chodzi o podział na mężczyzn i kobiety to Europa również jest na prowadzeniu i wskaźniki wynoszą kolejno: 23,05 dla mężczyzn oraz 6,53 dla kobiet.<br> Oznacza to, że na 100 000 mężczyzn samobójstwo popełnia 23, na 100 000 kobiet samobójstwo popełnia około 7. 
+Na podstawie powyższych danych można stwierdzić, iż  w Europie mężczyźni popełniają samobójstwo około 3 razy częściej niż kobiety.<br>
+Najniższy współczynnik dla obu płci widzimy w Ameryce Północnej (6). Dla kobiet i mężczyzn również będzie to również Ameryka Północna: Kobiety (2,38) Mężczyźni (9,68)
+
+### Najwyższe wartości wskaźnika samobójstw
+#### Ogólnie
+
+```{r echo=FALSE}
+x<-suicide_only %>% 
+  group_by(country,sex)%>%
+  summarise(mean_country_suicide = round(mean(suicide),2)) %>%
+  arrange(desc(mean_country_suicide))
+```
+```{r echo=FALSE}
+kable(x%>%
+  filter(sex=="Both sexes")%>%
+  head(10))
+```
+
+Spośród wszystkich krajów, najwyższy wskaźnik dla obu płci osiągnęła Litwa i wynosi on 36,79, co oznacza, że na 100 000 mieszkańców Litwy, samobójstwo co roku popełnia średnio 37 osób. Co ciekawe, w "top 10" znajduje się aż 7 krajów postkomunistycznych.
+
+#### Mężczyźni
+
+```{r echo=FALSE}
+kable(x%>%
+  filter(sex=="Male")%>%
+  head(15))
+```
+
+Jeśli chodzi o mężczyzn to wskaźnik największy jest również na Litwie i wynosi 64.62. Warto pochylić się tutaj nad Japonią, która plasuje się na 13 miejscu z wynikiem 31.34, albowiem ogromnym problemem w tym kraju jest samotność, co przekłada się w znacznym stopniu na liczbę samobójstw. Jest to również jedyny kraj spośród "top 13", który ma populację większą niż 100 milionów.
+Warto w tym momencie wspomnieć, że najwyższa wartość wskaźnika =/= największa liczba samobójstw. Aby to zobrazować przeprowadzę obliczenia dla naszego "top 1" (Litwy) oraz dla naszego "top 13" (Japonii):
+
+```{r echo=FALSE}
+kable(suicide_only%>%
+  filter(country %in% c("Lithuania","Japan"), sex=="Male",year == 2011))
+
+```
+Dla przykładu weźmy rok 2011:
+
+Litwa: wskaźnik = 66.48, populacja mężczyzn: 1 403 000 (wikipedia)<br>
+Japonia: wskaźnik = 31.16, populacja mężczyzn: 62 184 000 (stat.go.jp)
+
+Przypominam, że wskaźnik został obliczony w następujący sposób: (liczba samobójstw w ciągu roku / liczba ludności) * 100 000
+Chcąc wydobyć samą liczbę samobójstw należy wynik pomnożyć przez liczbę ludności (w tym wypadku przez liczbę mężczyzn) i podzielić przez 100 000.
+
+Litwa: około 932 samobójstw<br>
+Japonia: około 19 377 samobójstw
+
+Podsumowując, pomimo tego że wskaźnik dla Litwy jest dwa razy większy niż dla Japonii, w Litwie mężczyźni popełniają ponad 20 razy mniej samobójstw.
+
+#### Kobiety
+
+```{r echo=FALSE}
+kable(x%>%
+  filter(sex=="Female")%>%
+    head(10))
+```
+
+Najwyższy wskaźnik dla kobiet osiągnęło Lesotho (kraj w południowej Afryce) oraz Indie gdzie wskaźniki wynosły 13,67 i 13,62.
+
+### Najniższe wartości wskaźnika samobójstw
+#### Ogólnie
+
+```{r echo=FALSE}
+kable(x %>% 
+  filter(sex == "Both sexes") %>%
+  arrange(mean_country_suicide)%>%
+    head(10))
+```
+
+Badany wskaźnik dla obu płci osiąga najmniejszą wartość dla Antigui i Barbudy (Kraj na Karaibach) i wynosi 0.67
+Oznacza to, że na 1 000 000 mieszkańców samobójstwo popełnia 7 osób.
+Jeśli chodzi o bardziej znane kraje to na drugim miejsciu znajduje się Liban z wartością 0.82.
+
+#### Mężczyźni
+
+```{r echo=FALSE}
+kable(x %>% 
+  filter(sex == "Male") %>%
+  arrange(mean_country_suicide)%>%
+    head(10))
+```
+
+Dla samych mężczyzn, wskaźnik jest najmniejszy w Libanie i wynosi 0,96 czyli na 100 000 mężczyzn przypada jedno samobójstwo.
+
+#### Kobiety
+
+```{r echo=FALSE}
+kable(x %>% 
+  filter(sex == "Female") %>%
+  arrange(mean_country_suicide)%>%
+    head(10))
+```
+
+Natomiast jeśli chodzi o kobiety, znowu widzimy Antigue i Barbude na pierwszym miejsciu oraz Jamajkę na drugim.
+
+## 1c) Jak to wygląda jeśli chodzi o Polskę?
+
+```{r echo=FALSE}
+kable(suicide_only %>%
+  filter(country == "Poland") %>%
+  group_by(country,sex) %>%
+  summarise(poland_mean_suicide = round(mean(suicide),3))%>%
+    head(10))
+```
+
+Widoczna jest duża dysproporcja pomiędzy obliczonymi średnimi wartościami wskaźnika. Aby sprawdzić czy jest ona statystycznie istotna, przeprowadzę test dla dwóch średnich.
+
+Hipotezy:
+H0: m1 = m2
+H1: m1 > m2
+
+Czyli sprawdzimy czy średnia wartość wskaźnika samobójstw jest statystycznie większa dla mężczyzn, ale najpierw trzeba sprawdzić, którego testu możemy użyć, a którego nie.
+
+```{r echo=FALSE}
+poland<-suicide_only %>%
+  filter(country == "Poland") %>%
+  group_by(country,sex)
+
+male_poland <- poland%>%
+  filter(sex=="Male")
+
+female_poland <- poland%>%
+  filter(sex=="Female")
+
+male_poland %>%
+  select(suicide)%>%
+  pull()%>%
+  shapiro.test()
+
+female_poland%>%
+  select(suicide)%>%
+  pull()%>%
+  shapiro.test()
+```
+
+Ponieważ dane dla mężczyzn nie są zgodne z rozkładem normalnym (p-value < 0.05) nie mogę tutaj użyć testu t-studenta -  skorzystam z testu Wilcoxona.
+
+```{r echo=FALSE}
+x <- male_poland$suicide
+y <- female_poland$suicide
+
+wilcox.test(x,y,alternative="g",paired = F)
+```
+
+Wyliczona wartość p-value jest mniejsza od 0.05 czyli odrzucamy H0.
+
+Możemy zatem stwierdzić, że średnia dla mężczyzn jest istotnie większa od średniej dla kobiet.
+
+Wracając, widzimy więc, że w Polsce wskaźnik dla obu płci wynosi 16,46, co sugeruje, że średnio co roku na 100 000 obywateli Polski przypada 16 samobójstw. <br>
+Jak zmieni się ta liczba, jeśli zamiast 100 000 mieszkańców weźmiemy cały kraj?
+Na podstawie danych z GUS obliczyłem średni stan ludności w Polsce w latach 2000-2021 i wynosi on 38 293 191. <br>
+(16,46 / 100 000) * 38 293 191 = 6303,06 = 6303 - średnio tyle osób popełnia samobójstwo co roku.
+Patrząc na te dane od razu rzuca się w oczy dysproporcja między wskaźnikiem dla mężczyzn i dla kobiet, albowiem dla mężczyzn jest on ponad 7 razy większy, co oznacza, że w Polsce mężczyźni popełniają samobójstwo 7 razy częściej niż kobiety.
+
+# II. Interpretacja danych historycznych
+## 2a) Jak zmieniał się wskaźnik samobójstw na przestrzeni lat w ujęciu kontynentalnym?
+
+```{r echo=FALSE, fig.height=6, fig.width=10}
+wykres_historyczny <- suicide_only %>%
+  filter(sex=="Both sexes")%>%
+  group_by(continent,sex,year) %>%
+  summarise(mean_continent_year = round(mean(suicide),2))
+
+wykres_historyczny %>%
+  ggplot(aes(x=year,y=mean_continent_year,col=continent)) +
+      geom_line(size = 1) +
+  geom_point(size=2.5)+
+  scale_color_manual(values = continent_colors)+
+  labs(title = "Zmiana wskaźnika samobójstw dla obu płci na przestrzeni lat",
+x="Rok",
+y="Współczynnik śmiertelności z powodu samobójstw",
+fill="kontynent")+
+  theme_light(base_size = 15)
+```
+<br> W Europie możemy zauważyć największą tendencję spadkową, albowiem wskaźnik z poziomu 17.5 (2000 r.) zmalał do około 11.5 (2020 r.) co zdaje się być sporym sukcesem. Można by powiedzieć, że wraz z ogólnym rozwojem i polepszeniem się poziomu życia współczynnik ten malał. Widzimy również, że w latach 2007 - 2009 wskaźnik zaczął rosnąć co może częściowo pokrywać się czasowo z globalnym kryzysem gospodarczym, jednak brak jest podstaw do jednoznacznego wnioskowania o zależności przyczynowej.
+
+Tendencję spadkową można zauważyć również w Azji oraz w Ameryce Północnej co prawdopodobnie również ma powiązanie z rozwojem i poprawą warunków życiowych.<br>
+
+Afryka zdaje się zaś utrzymywać wskaźnik na podobnym poziomie przez cały badany okres, co z kolei może wiązać się z powolnym rozwojem w tamtejszych rejonach. <br>
+
+Najbardziej zmienna zdaje się być Ameryka Południowa, gdzie wskaźnik rósł i malał na zmianę.
+
+# III. Badanie zależności + wykresy
+
+## 3a) Czy istnieje zależność między średnim spożyciem alkoholu (wśród osób pijących) w kraju a samobójstwami?
+
+### Ogólnie
+```{r echo=FALSE}
+x<-suicide_alcohol%>%
+  filter(sex=="Both sexes")%>%
+  group_by(continent,sex)
+
+cor(x$suicide,x$alcohol,method = "spearman")
+```
+Korelacja wynosi 0.48, co sugeruje umiarkowaną zależność pomiędzy alkoholem a samobójstwami. Sprawdźmy jeszcze jak to wygląda jeśli chodzi o mężczyzn i kobiety osobno.
+
+### Mężczyźni
+
+```{r echo=FALSE}
+x<-suicide_alcohol%>%
+  filter(sex=="Male")%>%
+  group_by(continent,sex)
+
+cor(x$suicide,x$alcohol,method="spearman")
+```
+Widzimy, że korelacja dla mężczyzn wzrosła do 0.54. Co prawda interpretacja pozostaje bez zmian, ale wyższa korelacja może wskazywać na to, że zależność między spożywaniem alkoholu a samobójstwami jest silniejsza w przypadku mężczyzn aniżeli w przypadku kobiet. Zobaczmy jeszcze jak to wygląda na wykresie.
+
+```{r echo=FALSE, fig.height=7, fig.width=10}
+x%>%
+  ggplot()+
+  geom_point(mapping=aes(x=alcohol,y=suicide,col=continent),alpha = 0.7)+
+  scale_color_manual(values = continent_colors)+
+  labs(
+    title="Zależność między wskaźnikiem spożywanego alkoholu a wskaźnikiem samobójstw",
+    x="Średnie dzienne spożycie na osobę w gramach wśród osób pijących",
+    y="Współczynnik śmiertelności z powodu samobójstw"
+  )+ 
+  facet_wrap(vars(continent),ncol=2)+
+  theme_light(base_size=15)
+  
+```
+<br>
+W Afryce możemy zauważyć, że rosnące spożycie alkoholu nie ma wpływu na współczynnik samobójstw. 
+Największą zależność widzimy dla Europy oraz Azji, gdzie dla Europy zdaje się być silniejsza dlatego w dalszej części badania skupię się właśnie na niej. 
+
+```{r echo=FALSE}
+x<-suicide_alcohol%>%
+  filter(sex=="Male",continent=="Europe")%>%
+  group_by(continent,sex)
+
+cor(x$suicide,x$alcohol,method="spearman")
+```
+Korelacja dla mężczyzn w Europie jest niemalże identyczna jak w przypadku korelacji globalnej.
+
+```{r echo=FALSE, fig.height=6, fig.width=10}
+x%>%
+  ggplot()+
+  geom_point(mapping=aes(x=alcohol,y=suicide,col=continent),alpha = 0.7)+
+  scale_color_manual(values = continent_colors)+
+  labs(
+    title="Zależność między wskaźnikiem spożywanego alkoholu a wskaźnikiem samobójstw",
+    x="Średnie dzienne spożycie na osobę w gramach wśród osób pijących",
+    y="Współczynnik śmiertelności z powodu samobójstw"
+  )+
+  theme_light(base_size = 15)
+```
+<br>
+Łatwo zauważyć, że wraz ze wzrostem spożywanego alkoholu rośnie również wskaźnik samobójstw. Oczywiście, nie jest to relacja liniowa, ponieważ korelacja wyniosła 0.54, jednakże widać pewną zależność. Widzimy również kraje, które pomimo wysokiego spożycia alkoholu, wskaźnik samobójstw mają relatywnie niski oraz na odwrót - wskaźnik samobójstw jest absurdalnie wysoki przy wcale nie tak dużym spożyciu alkoholu. Oznacza to, że wśród pijących osób, alkohol może mieć wpływ na popełniane samobójstwa, jednakże nie jest on głównym czynnikiem.
+
+### Kobiety
+
+```{r echo=FALSE}
+x<-suicide_alcohol%>%
+  filter(sex=="Female")%>%
+  group_by(continent,sex)
+
+cor(x$suicide,x$alcohol,method = 'spearman')
+```
+
+Dla kobiet sytuacja wygląda już nieco inaczej - mianowicie korelacja wyniosła 0.31, przez co nie możemy już mówić o umiarkowanej zależności, albowiem taki wynik sugeruje słabą zależność. 
+
+W tym miejscu warto również sprawdzić jak wygląda spożycie alkoholu ze względu na płeć. 
+
+```{r echo=FALSE}
+kable(alcohol %>%
+  group_by(sex)%>%
+  summarise(mean_alcohol = round(mean(alcohol),2)))
+```
+
+Jak widzimy, średnia wartość wskaźnika dla mężczyzn jest niemalże 4 razy większa od wartości wskaźnika dla kobiet.
+
+Powszechną wiedzą jest szkodliwość alkoholu oraz jego negatywne działanie na nasz organizm chociażby na wątrobę, trzustkę czy też serce. Warto jednak wspomnieć, że alkohol nie dotyka nas tylko na poziomie fizycznym. Ludzie z problemami często sięgają po różne używki takie jak narkotyki, czy też właśnie alkohol aby chwilowo zapomnieć o problemach, jednak w rzeczywistości działa to w drugą stronę. Często takie zachowanie nie dość, że pogłębia pierwotny problem to dodatkowo generuje nowe - takie jak depresja, zaburzenia lękowe czy też zaniki pamięci oraz może prowadzić do uzależnienia. 
+
+Alkohol w pewnym stopniu przyczynia się do popełnianych samobójstw, w szczególności u mężczyzn, jednakże na podstawie przedstawionych danych nie można stwierdzić, że jest on głównym determinantem omawianego zjawiska.
+
+## 3b) Czy w krajach, gdzie obywatele płacą za leczenie z własnej kieszeni, wskaźnik samobójstw jest wyższy?<br>
+
+```{r echo=FALSE}
+cor(suicide_oop$suicide,suicide_oop$oop,method = 'spearman')
+```
+
+Korelacja między własnymi wydatkami na opiekę zdrowotną a wskaźnikiem samobójstw jest słaba (0.16). Oznacza to, że wysokie wydatki mogą mieć w niektórych krajach wpływ na wyższy wskaźnik samobójstw, jednak nie jest to relacja przyczynowo-skutkowa. Aby to lepiej zobrazować, spójrzmy na wykres.
+
+```{r echo=FALSE, fig.height=6, fig.width=10}
+x<- suicide_oop %>%
+  filter(year %in% c(2000,2010,2020))
+  
+
+x%>%
+  ggplot()+
+  geom_point(mapping=aes(x=oop,y=suicide, col=continent), alpha = 0.7)+
+  scale_color_manual(values = continent_colors)+
+  labs(title="Relacja między wskaźnikiem samobójstw a wydatkami na opiekę zdrowotną\nz własnej kieszeni",
+       x="Roczne wydatki na opiekę zdrowotną [USD]",
+       y="Współczynnik śmiertelności z powodu samobójstw")+
+  facet_wrap(vars(year))+
+    scale_x_continuous(labels=label_number())+
+  theme_light(base_size = 15)
+```
+<br>Widzimy, że najwięcej danych znajduje się w przedziale 0-500 USD, oraz właśnie w tym przedziale wskaźnik samobójstw osiąga najwyższe jak i najniższe wartości. To sugeruje, że dla większości świata wydatki na opiekę zdrowotną z własnej kieszeni mają znikomy wpływ na popełniane samobójstwa. Dla Europy możemy zaobserwować, że wskaźnik samobójstw utrzymuje się stosunkowo wysoko przy rosnących wydatkach. Oznacza to, że wysokie wydatki lub ich brak nie są głównymi czynnikami, które oddziałują na badany wskaźnik.
+
+## 3c) Czy w krajach z wyższymi wydatkami rządowymi na opiekę zdrowotną wskaźnik samobójstw jest niższy?<br>
+
+```{r echo=FALSE}
+cor(suicide_dghe$suicide,suicide_dghe$dghe,method='spearman')
+```
+
+Korelacja w tym przypadku jest już nieco wyższa, (0.3) ale dalej kwalifikuje się jako słaba. Jest ona jednak wyższa niż w przypadku wydawania własnych pieniędzy, co mogłoby sugerować pewien paradoks, mianowicie: wzrostowi rządowych wydatków na opiekę zdrowotną towarzyszy większy wzrost wskaźnika samobójstw, niż w przypadku finansowania leczenia z własnej kieszeni. Jest to o tyle ciekawe, że intuicyjnie wydawałoby się, że jest na odwrót.
+
+```{r echo=FALSE, fig.height=7, fig.width=10}
+suicide_dghe%>%
+  filter(year %in% c(2000,2010,2020))%>%
+  ggplot()+
+  geom_point(mapping=aes(x=dghe,y=suicide, col=continent), alpha = 0.7) +
+  scale_color_manual(values = continent_colors)+
+  labs(title="Relacja między wskaźnikiem samobójstw a wydatkami rządowymi\nna opiekę zdrowotną",
+       x="Roczne rządowe wydatki na opiekę zdrowotną w przeliczeniu na osobę [USD]",
+       y="Współczynnik śmiertelności z powodu samobójstw")+
+  facet_wrap(vars(year))+
+    scale_x_continuous(labels=label_number())+
+  theme_light(base_size = 15)
+```
+
+Widzimy, że na przestrzeni lat wydatki rządowe wzrosły, co jednak nie miało przełożenia na wskaźnik samobójstw. Możemy zauważyć duże zróżnicowanie - najwięcej danych jest skupione w przedziale 0 - 2000 USD, gdzie znajdziemy państwa zarówno z wysokim, a nawet najwyższym wskaźnikiem samobójstw jak i najniższym.
+
+## 3d) Czy istnieje zależność między PKB per capita a samobójstwami?<br>
+
+```{r echo=FALSE}
+cor(suicide_pkb$pkb,suicide_pkb$suicide,method='spearman')
+```
+Korelacja na poziomie 0.24 wskazuje na słabą zależność pomiędzy PKB per capita a wskaźnikiem samobójstw. Oznacza to, że w niektórych krajach wzrostowi PKB per capita mógł towarzyszyć wzrost wskaźnika samobójstw.
+
+```{r echo=FALSE, fig.height=7, fig.width=10}
+suicide_pkb%>%
+  filter(year %in% c(2000,2010,2020))%>%
+  ggplot()+
+  scale_color_manual(values = continent_colors)+
+  geom_point(mapping=aes(x=pkb,y=suicide, col=continent), alpha = 0.7)+
+  labs(title="Relacja między PKB per capita a wskaźnikiem samobójstw",
+       x="PKB per capita [USD]",
+       y="Współczynnik śmiertelności z powodu samobójstw")+
+  facet_wrap(vars(year))+
+  scale_x_continuous(labels=label_number())+
+  theme_light(base_size=15)
+```
+
+Wykresy dla poszczególnych lat nie różnią się znacząco od siebie. Największe zagęszczenie danych ma miejsce w przedziale 0 - 50 000 USD gdzie znajdziemy zarówno najwyższą jak i najniższą wartość wskaźnika.
+
+# PODSUMOWANIE
+
+Na podstawie badanych danych pokazane zostało, w którym kraju oraz na jakim kontynencie wskaźnik samobójstw osiąga wartość najwyższą oraz najniższą. Przedstawiono jak badany wskaźnik zmieniał się w czasie w ujęciu kontynentalnym oraz sprawdzono korelację pomiędzy spożyciem alkoholu wśród osób pijących oraz trzema czynnikami ekonomicznymi. Na podstawie wykonanych testów, wykazano iż spożycie alkoholu ma największy wpływ na wskaźnik śmiertelności z powodu samobójstw spośród badanych czynników. Korelacja pomiędzy finansowymi czynnikami a badanym wskaźnikiem wyszła niska, co może wskazywać na to, że większe przełożenie mają czynniki społeczno-kulturowe, takie jak religia, samotność czy też ustrój w państwie.
