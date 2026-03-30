@@ -2,27 +2,36 @@
 
 [Otwórz stronę z analizą](https://ssowula.github.io/Analiza-wskaznika-samobojstw/)
 
-Projekt przedstawia analizę wskaźnika samobójstw w latach 2000–2020/2021 z podziałem na kontynenty, kraje oraz płeć. Analiza została wykonana w języku R (R Markdown) i opublikowana jako strona HTML.
+Projekt przedstawia kompleksową analizę wskaźnika samobójstw w latach 2000–2020/2021 z podziałem na kontynenty, kraje oraz płeć. Analiza została wykonana w języku R przy użyciu R Markdown i opublikowana jako interaktywna strona HTML.
 
-## Zakres analizy
+---
 
-- porównanie wskaźnika samobójstw między kontynentami i krajami
+## 🎯 Cel projektu
 
-- analiza różnic ze względu na płeć
+Celem badania jest:
 
-- analiza zmian historycznych w czasie
+- Identyfikacja krajów i kontynentów o najwyższych i najniższych wskaźnikach samobójstw.
+- Analiza różnic między płciami.
+- Obserwacja trendów historycznych wskaźnika w latach 2000–2020/2021.
+- Badanie zależności między wskaźnikiem samobójstw a czynnikami ekonomicznymi i społecznymi:
+  - średnie spożycie alkoholu,
+  - wydatki na opiekę zdrowotną (zarówno prywatne, jak i rządowe),
+  - PKB per capita.
 
-- badanie zależności między wskaźnikiem samobójstw a:
+---
 
-- spożyciem alkoholu,
+## 📊 Zakres analizy
 
-- wydatkami na opiekę zdrowotną (prywatnymi i rządowymi),
+1. **Porównanie wskaźnika samobójstw między kontynentami i krajami**  
+2. **Analiza różnic płciowych**  
+3. **Analiza zmian w czasie** – ujęcie kontynentalne i krajowe  
+4. **Badanie zależności ekonomicznych**:
+   - korelacja Spearmana z alkoholem, wydatkami zdrowotnymi i PKB  
+5. **Wnioski** – identyfikacja głównych czynników wpływających na wskaźnik
 
-- PKB per capita
+---
 
-- Zależności badano przy użyciu korelacji Spearmana.
-
-## Dane
+## 🗂 Dane
 
 Dane pochodzą z publicznych źródeł:
 
@@ -30,10 +39,26 @@ Dane pochodzą z publicznych źródeł:
 
 - Our World in Data (PKB per capita)
 
-## Technologie
+---
 
-- R
+## 🛠 Technologie
 
-- R Markdown
+- **R**  
+- **R Markdown**  
+- Pakiety R: `dplyr`, `ggplot2`, `knitr`, `scales`, `nortest`
 
-- pakiety: dplyr, ggplot2, knitr, scales, nortest
+---
+
+## 🔍 Wnioski
+
+- Najwyższy wskaźnik samobójstw odnotowano w Europie, najniższy w Ameryce Północnej.  
+- Mężczyźni popełniają samobójstwo średnio 3–7 razy częściej niż kobiety w zależności od kraju.  
+- Spożycie alkoholu koreluje umiarkowanie z wskaźnikiem samobójstw, szczególnie u mężczyzn.  
+- Wydatki zdrowotne (zarówno prywatne, jak i rządowe) i PKB per capita wykazują słabą korelację ze wskaźnikiem.  
+- Czynniki społeczno-kulturowe mogą mieć większe znaczenie niż czynniki ekonomiczne.
+
+---
+
+## 📎 Link do pełnej analizy
+
+[Kliknij tutaj, aby otworzyć stronę HTML z pełną analizą](https://ssowula.github.io/Analiza-wskaznika-samobojstw/)
