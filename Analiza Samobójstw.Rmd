@@ -284,7 +284,9 @@ kable(suicide_only %>%
 Widoczna jest duża dysproporcja pomiędzy obliczonymi średnimi wartościami wskaźnika. Aby sprawdzić czy jest ona statystycznie istotna, przeprowadzę test dla dwóch średnich.
 
 Hipotezy:
+
 H0: m1 = m2
+
 H1: m1 > m2
 
 Czyli sprawdzimy czy średnia wartość wskaźnika samobójstw jest statystycznie większa dla mężczyzn, ale najpierw trzeba sprawdzić, którego testu możemy użyć, a którego nie.
